@@ -1,0 +1,53 @@
+name: docker-cli
+base: core18
+version: "0.1"
+summary: Docker container runtime (CLI)
+description: |
+  This snap only contains the Docker CE CLI. Please use the docker snap
+  in order to install the full Docker runtime instead.
+
+  Example usage:
+
+    $ sudo snap install docker-cli
+    $ sudo snap alias docker-cli.docker docker
+    $ export DOCKER_HOST=ssh://ubuntu@host
+    $ docker ps -a
+
+  **Authors**
+
+  This snap is built from source code published by Docker, Inc. It is not
+  endorsed or published by Docker, Inc.
+
+  Docker and the Docker logo are trademarks or registered trademarks of Docker, Inc. in the
+  United States and/or other countries. Docker, Inc. and other parties may also have trademark
+  rights in other terms used herein.
+
+grade: stable
+confinement: strict
+parts:
+  my-part:
+    plugin: nil
+    build-snaps:
+      - docker
+    override-build: |
+      set -ex
+      version=$(docker version -f '{{ .Client.Version }}' 2> /dev/null || true)
+      snapcraftctl set-version "${version}"
+
+      cp /snap/docker/current/bin/docker ./docker
+      cp /snap/docker/current/bin/docker-completion.sh ./docker-completion.sh
+
+      snapcrafctl build
+    stage:
+      - docker
+      - docker-completion.sh
+
+apps:
+  docker:
+    command: docker
+    completer: docker-completion.sh
+    plugs:
+      - network
+      - home
+    command-chain:
+      - snap/command-chain/snapcraft-runner
